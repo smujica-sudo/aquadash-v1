@@ -290,7 +290,7 @@ async function fetchDataFromCloud() {
     
     // Transformar DB_CLIENTES
     (db.clientes || []).forEach(c => {
-      let clienteNombre = c['Cliente (ID)'];
+      let clienteNombre = c['Cliente (ID)'] || c['Cliente'] || 'Cliente Desconocido';
       STRATEGIC.push({
         n: clienteNombre,
         hub: c.Hub || 'N/A',
@@ -351,8 +351,8 @@ async function fetchDataFromCloud() {
 // ══════════════════════════════════════════
 function setYear(y, btn){ selYear=y; document.querySelectorAll('.ybtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(y===2026 && selMonth>2) setMonth(0, document.getElementById('mb0')); else refreshAll(); }
 function setMonth(m, btn){ selMonth=m; document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); refreshAll(); }
-function refreshAll(){ buildP1(); if(selIdx!==null) selectClient(selIdx); }
-function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); btn.classList.add('active'); }
+function refreshAll(){ buildP1(); flist(); if(selIdx!==null) selectClient(selIdx); }
+function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); btn.classList.add('active'); if(id === 'p2') flist(); }
 
 function getClientTon(name){ const v=VENTA[name]; if(!v) return null; const arr=v[selYear]||[]; return selMonth===0 ? arr.reduce((a,b)=>a+b,0) : (arr[selMonth-1]||0); }
 function getClientMusd(name){ const v=VENTA[name]; if(!v) return null; const arr=v[selYear+'m']||[]; return selMonth===0 ? arr.reduce((a,b)=>a+b,0) : (arr[selMonth-1]||0); }
@@ -432,21 +432,30 @@ function goTo(idx){showPage('p2',document.querySelectorAll('.ntab')[1]);selectCl
 // RENDERIZADO PÁGINA 2 Y PESTAÑAS V8.1
 // ══════════════════════════════════════════
 function flist(){
-  const q=document.getElementById("srch").value.toLowerCase();
-  const hub=document.getElementById("fhub").value;
-  filt=STRATEGIC.filter(c=>(!q||c.n.toLowerCase().includes(q))&&(!hub||c.hub===hub));
-  document.getElementById("cnt2").textContent=filt.length+" clientes";
+  const srch = document.getElementById("srch");
+  const q = srch ? srch.value.toLowerCase() : "";
+  const fhub = document.getElementById("fhub");
+  const hub = fhub ? fhub.value : "";
   
-  document.getElementById("clist").innerHTML=filt.map(c=>{
-    const idx=STRATEGIC.indexOf(c);
-    const ton=getClientTon(c.n);
-    return`<div class="ci${selIdx===idx?" active":""}" onclick="selectClient(${idx})">
-      <div class="ci-name">${c.n}</div>
-      <div class="ci-row">
-        <span class="badge ${hubCl(c.hub)}">${c.hub}</span>
-        ${ton>0?`<span style="font-size:10px;color:var(--text3);">${fmtTv(ton)} T</span>`:`<span class="no-data-chip">sin ventas</span>`}
-      </div>
-    </div>`;}).join("");
+  filt = STRATEGIC.filter(c => (!q || (c.n && c.n.toLowerCase().includes(q))) && (!hub || c.hub===hub));
+  
+  const cnt2 = document.getElementById("cnt2");
+  if(cnt2) cnt2.textContent = filt.length + " clientes";
+  
+  const clist = document.getElementById("clist");
+  if(clist) {
+    clist.innerHTML = filt.map(c => {
+      const idx = STRATEGIC.indexOf(c);
+      const ton = getClientTon(c.n);
+      return `<div class="ci${selIdx===idx?" active":""}" onclick="selectClient(${idx})">
+        <div class="ci-name">${c.n}</div>
+        <div class="ci-row">
+          <span class="badge ${hubCl(c.hub)}">${c.hub}</span>
+          ${ton>0 ? `<span style="font-size:10px;color:var(--text3);">${fmtTv(ton)} T</span>` : `<span class="no-data-chip">sin ventas</span>`}
+        </div>
+      </div>`;
+    }).join("");
+  }
 }
 
 function selectClient(idx){
